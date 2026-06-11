@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PorciGest - Planificación de Gestación Porcina</title>
+    
+    <!-- Tailwind CSS CDN para estilos rápidos y modernos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Ajustes suaves para transiciones de UI */
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col justify-between antialiased">
+
+    <!-- Sistema de Notificación Flotante (Reemplaza alert) -->
+    <div id="toast" class="fixed top-5 right-5 z-50 p-4 rounded-xl shadow-lg border bg-white border-slate-200 flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 pointer-events-none">
+        <div class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600" id="toast-icon-container">
+            <svg class="w-5 h-5 text-amber-500" id="toast-icon-bell" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+        </div>
+        <span id="toast-message" class="text-sm font-semibold text-slate-800">Mensaje predeterminado</span>
+    </div>
+
+    <!-- Cabecera Técnica de la Aplicación -->
+    <header class="bg-white border-b border-slate-100 py-5 px-4 md:px-8 shadow-sm">
+        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-emerald-600 rounded-xl text-white shadow-md shadow-emerald-600/20">
+                    <!-- Icono Cerda Minimalista SVG -->
+                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="9" cy="9" r="1" fill="currentColor"/>
+                        <path d="M12 11h.01" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-slate-900">PorciGest</h1>
+                    <p class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Planificación de Gestación Porcina</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-semibold bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-full border border-emerald-100">
+                    Estándar: 115 Días (3m - 3s - 3d)
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Cuerpo del Aplicativo (Grid principal) -->
+    <main class="max-w-5xl mx-auto p-4 md:p-6 w-full grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+        
+        <!-- Columna de Entrada de Datos (Izquierda) -->
+        <div class="lg:col-span-1 space-y-5">
+            <!-- Formulario de Registro -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                <div class="border-b border-slate-50 pb-3">
+                    <h2 class="text-lg font-bold text-slate-950">Registro de Monta</h2>
+                    <p class="text-xs text-slate-400">Introduce la fecha del salto o inseminación.</p>
+                </div>
+                
+                <form id="form-registro" class="space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">ID o Nombre de la Cerda</label>
+                        <input
+                            type="text"
+                            id="nombre-cerda"
+                            placeholder="Ej. Cerda Dorada, Corral 3"
+                            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-sm font-medium"
+                        />
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Fecha del Evento</label>
+                        <input
+                            type="date"
+                            id="fecha-monta"
+                            required
+                            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-sm font-medium"
+                        />
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all shadow-md shadow-emerald-600/10 hover:shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <!-- Icono Botón -->
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Guardar en Control
+                    </button>
+                </form>
+            </div>
+
+            <!-- Tarjeta de Información Veterinaria (Finca en Desarrollo) -->
+            <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md space-y-3 relative overflow-hidden">
+                <div class="absolute top-0 right-0 transform translate-x-4 -translate-y-4 text-white/5 pointer-events-none">
+                    <svg class="w-32 h-32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                    </svg>
+                </div>
+                <div class="flex items-center gap-2 text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="font-bold text-xs uppercase tracking-wider">Cronograma Seguro</h3>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Este sistema calcula automáticamente las fechas clave sanitarias basándose en parámetros biológicos de la cerda. 
+                </p>
+                <div class="text-[11px] bg-slate-800 text-slate-300 p-2.5 rounded-lg border border-slate-700">
+                    <strong class="text-white block mb-0.5">⚠️ Nota Veterinaria:</strong>
+                    Nunca vacunar contra Parvovirus/Leptospira a cerdas gestantes activas, puede inducir abortos.
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna de Resultados de Monitoreo (Derecha) -->
+        <div class="lg:col-span-2 space-y-5">
+            
+            <!-- Bloque de Resultados Calculados -->
+            <div id="resultados-panel" class="bg-white p-5 md:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6 hidden">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-50 pb-4">
+                    <div>
+                        <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider block">Fecha Probable de Parto (FPP)</span>
+                        <h2 id="fpp-resultado" class="text-xl md:text-2xl font-black text-slate-950 capitalize mt-1">
+                            -
+                        </h2>
+                    </div>
+                    <button
+                        id="btn-descargar-ics"
+                        class="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Descargar Alerta (.ICS)
+                    </button>
+                </div>
+
+                <!-- Indicadores Clave de Progreso -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Progreso de Preñez</span>
+                        <span class="text-2xl font-black text-slate-900 mt-1 block">
+                            <span id="dias-transcurridos">0</span> <span class="text-xs text-slate-500 font-normal">/ 115 días</span>
+                        </span>
+                        <div class="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                            <div id="barra-progreso" class="bg-emerald-600 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Días Faltantes</span>
+                        <span class="text-2xl font-black text-emerald-600 mt-1 block">
+                            <span id="dias-restantes">0</span> <span class="text-xs text-emerald-600/70 font-normal">días</span>
+                        </span>
+                        <span id="semanas-restantes" class="text-[10px] text-slate-400 mt-1 block font-medium">Restan aprox. 0 semanas</span>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fase Biológica</span>
+                        <div class="mt-1">
+                            <span id="tag-estado" class="inline-block px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-md border border-emerald-100">
+                                Gestación Estable
+                            </span>
+                        </div>
+                        <span id="porcentaje-completado" class="text-[10px] text-slate-400 mt-1 block font-medium">0% Completado</span>
+                    </div>
+                </div>
+
+                <!-- Cronograma Sanitario (Limpio y Clínico) -->
+                <div class="space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cronograma Veterinario y de Manejo</h3>
+                    <div id="hitos-container" class="border-l-2 border-slate-100 pl-4 ml-2 space-y-6">
+                        <!-- Generado dinámicamente mediante JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de Animales Activos en Finca -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-50 pb-3">
+                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Animales Activos en Finca</h3>
+                    
+                    <!-- Buscador de Cerdas -->
+                    <input
+                        type="text"
+                        id="buscador-historial"
+                        placeholder="Buscar por ID..."
+                        class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                </div>
+
+                <div id="historial-vacio" class="text-xs text-slate-400 py-4 text-center">
+                    No hay cerdas registradas en el historial.
+                </div>
+
+                <div id="historial-tabla-container" class="overflow-x-auto hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                <th class="pb-2">ID Cerda</th>
+                                <th class="pb-2">Fecha Monta</th>
+                                <th class="pb-2">Fecha Parto</th>
+                                <th class="pb-2 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historial-tabla-body" class="divide-y divide-slate-50">
+                            <!-- Generado dinámicamente mediante JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Pie de Página -->
+    <footer class="bg-white border-t border-slate-100 py-4 text-center text-[11px] text-slate-400 mt-8">
+        <p>© <span id="current-year">2026</span> PorciGest • Finca en Desarrollo • Ajustes Clínicos Sanitarios Integrados.</p>
+    </footer>
+
+    <!-- Lógica de Negocio y Controladores de Eventos en JavaScript Puro -->
+    <script>
+        const GESTATION_DAYS = 115;
+        let historial = [];
+
+        // Inicialización de Inputs de fecha
+        const inputFechaMonta = document.getElementById('fecha-monta');
+        const inputNombreCerda = document.getElementById('nombre-cerda');
+        const formRegistro = document.getElementById('form-registro');
+        const inputBuscador = document.getElementById('buscador-historial');
+
+        // Establecer fecha por defecto a "hoy"
+        window.addEventListener('DOMContentLoaded', () => {
+            const hoy = new Date().toISOString().split('T')[0];
+            inputFechaMonta.value = hoy;
+            document.getElementById('current-year').innerText = new Date().getFullYear();
+            
+            // Cargar base local de datos
+            cargarHistorialLocal();
+            
+            // Renderizar cálculos iniciales
+            calcularYMostrar();
+        });
+
+        // Generar hitos sanitarios basados en fecha de inicio
+        function obtenerHitos(fechaBaseStr) {
+            const fechaInicio = new Date(fechaBaseStr + 'T00:00:00');
+            
+            // Cálculo de fechas relativas según ciclo clínico adaptado
+            const fCelo = sumarDias(fechaInicio, 18);
+            const fVit = sumarDias(fechaInicio, 30);
+            const fVisual = sumarDias(fechaInicio, 60);
+            const fVacuna = sumarDias(fechaInicio, 75);
+            const fDesparasita = sumarDias(fechaInicio, 95);
+            const fMaternidad = sumarDias(fechaInicio, 110);
+            const fParto = sumarDias(fechaInicio, GESTATION_DAYS);
+
+            return [
+                { nombre: 'Monitoreo de Retorno al Celo', dia: '18 - 23', fecha: fCelo, desc: 'Fase crítica: Observar comportamiento inquieto o si acepta al macho. Si no hay celo, la monta fue un éxito.' },
+                { nombre: 'Aplicación de Vitaminas', dia: '30', fecha: fVit, desc: 'Inyección de Complejo Vitamínico A, D3, E + Hierro para asegurar y fijar embriones en desarrollo.' },
+                { nombre: 'Confirmación Visual de Preñez', dia: '60', fecha: fVisual, desc: 'Inspección de costo cero: Observar vulva recogida hacia arriba, desarrollo de tetas y temperamento dócil.' },
+                { nombre: 'Vacunación Prenatal de la Madre', dia: '75 - 80', fecha: fVacuna, desc: 'Vacuna contra Micoplasma / Colibacilosis. Clave para transferir inmunidad a los lechones mediante el calostro.' },
+                { nombre: 'Desparasitación Interna y Externa', dia: '95', fecha: fDesparasita, desc: 'Desparasitar a la madre para asegurar que ingrese limpia de parásitos a la zona de partos.' },
+                { nombre: 'Traslado a Maternidad y Lavado', dia: '110', fecha: fMaternidad, desc: 'Bañar a conciencia a la cerda y trasladarla a su jaula o cubículo de parto para que se aclimate.' },
+                { nombre: 'Fecha Probable de Parto (FPP)', dia: '115', fecha: fParto, desc: 'Alerta de parto inminente. Monitorear constantemente y tener listos trapos secos, fuente de calor y desinfectante.' }
+            ];
+        }
+
+        function sumarDias(fecha, dias) {
+            const nueva = new Date(fecha);
+            nueva.setDate(fecha.getDate() + dias);
+            return nueva;
+        }
+
+        // Ejecución central de recálculo dinámico
+        function calcularYMostrar() {
+            const fechaStr = inputFechaMonta.value;
+            if (!fechaStr) return;
+
+            const panel = document.getElementById('resultados-panel');
+            panel.classList.remove('hidden');
+
+            const fechaInicio = new Date(fechaStr + 'T00:00:00');
+            const fechaParto = sumarDias(fechaInicio, GESTATION_DAYS);
+
+            // Cálculos matemáticos de progresión
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+
+            const diffTiempo = hoy - fechaInicio;
+            const diasTranscurridos = Math.max(0, Math.floor(diffTiempo / (1000 * 60 * 60 * 24)));
+            const diasRestantes = Math.max(0, GESTATION_DAYS - diasTranscurridos);
+            const porcentaje = Math.min(100, Math.round((diasTranscurridos / GESTATION_DAYS) * 100));
+
+            // Actualización de textos en pantalla
+            document.getElementById('fpp-resultado').innerText = formatearFecha(fechaParto);
+            document.getElementById('dias-transcurridos').innerText = diasTranscurridos;
+            document.getElementById('dias-restantes').innerText = diasRestantes;
+            document.getElementById('porcentaje-completado').innerText = `${porcentaje}% Completado`;
+            
+            // Barra de progreso interactiva
+            const barra = document.getElementById('barra-progreso');
+            barra.style.width = `${porcentaje}%`;
+
+            // Semanas restantes text
+            const semRestantes = Math.ceil(diasRestantes / 7);
+            document.getElementById('semanas-restantes').innerText = `Restan aprox. ${semRestantes} semanas`;
+
+            // Configurar etiqueta de estado según porcentaje
+            const tagEstado = document.getElementById('tag-estado');
+            if (porcentaje === 100) {
+                tagEstado.className = "inline-block px-2.5 py-0.5 bg-red-50 text-red-700 text-[11px] font-bold rounded-md border border-red-100";
+                tagEstado.innerText = "Parto Hoy";
+            } else if (porcentaje > 95) {
+                tagEstado.className = "inline-block px-2.5 py-0.5 bg-amber-50 text-amber-700 text-[11px] font-bold rounded-md border border-amber-100 animate-pulse";
+                tagEstado.innerText = "Traslado Listo";
+            } else {
+                tagEstado.className = "inline-block px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-md border border-emerald-100";
+                tagEstado.innerText = "Gestación Estable";
+            }
+
+            // Renderizado de la línea de hitos
+            const hitos = obtenerHitos(fechaStr);
+            const hitosContainer = document.getElementById('hitos-container');
+            hitosContainer.innerHTML = '';
+
+            hitos.forEach(hito => {
+                const esPasado = hoy > hito.fecha;
+                const hitoDiv = document.createElement('div');
+                hitoDiv.className = "relative group";
+
+                hitoDiv.innerHTML = `
+                    <div class="absolute -left-[23px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white ${esPasado ? 'bg-emerald-600' : 'bg-slate-300'}"></div>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <h4 class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                            ${hito.nombre}
+                            <span class="text-[9px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                                Día ${hito.dia}
+                            </span>
+                        </h4>
+                        <span class="text-[11px] font-bold capitalize ${esPasado ? 'text-emerald-600' : 'text-slate-400'}">
+                            ${formatearFechaCortaDate(hito.fecha)}
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                        ${hito.desc}
+                    </p>
+                `;
+                hitosContainer.appendChild(hitoDiv);
+            });
+        }
+
+        // Controladores de almacenamiento e historial local
+        function cargarHistorialLocal() {
+            const guardado = localStorage.getItem('historial_gestacion_finca_html');
+            if (guardado) {
+                try {
+                    historial = JSON.parse(guardado);
+                } catch (e) {
+                    console.error("Error al leer localStorage", e);
+                }
+            }
+            renderizarHistorial();
+        }
+
+        function guardarHistorialLocal() {
+            localStorage.setItem('historial_gestacion_finca_html', JSON.stringify(historial));
+            renderizarHistorial();
+        }
+
+        function renderizarHistorial() {
+            const busqueda = inputBuscador.value.toLowerCase();
+            const filtrados = historial.filter(item => item.nombre.toLowerCase().includes(busqueda));
+
+            const tableContainer = document.getElementById('historial-tabla-container');
+            const vacioContainer = document.getElementById('historial-vacio');
+            const tbody = document.getElementById('historial-tabla-body');
+
+            if (filtrados.length === 0) {
+                tableContainer.classList.add('hidden');
+                vacioContainer.classList.remove('hidden');
+                vacioContainer.innerText = busqueda ? "No hay registros que coincidan con la búsqueda." : "No hay cerdas registradas en el historial.";
+            } else {
+                tableContainer.classList.remove('hidden');
+                vacioContainer.classList.add('hidden');
+                tbody.innerHTML = '';
+
+                filtrados.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "text-xs hover:bg-slate-50/50 transition-colors";
+
+                    tr.innerHTML = `
+                        <td class="py-2.5 font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            ${item.nombre}
+                        </td>
+                        <td class="py-2.5 text-slate-500">${formatearFechaCortaString(item.fechaMonta)}</td>
+                        <td class="py-2.5 text-emerald-700 font-bold">${formatearFechaCortaString(item.fechaParto)}</td>
+                        <td class="py-2.5 text-right flex justify-end gap-1.5">
+                            <button 
+                                onclick="descargarCalendarioSow('${item.nombre}', '${item.fechaParto}')"
+                                class="p-1 hover:bg-slate-100 rounded text-slate-500"
+                                title="Añadir a Calendario"
+                            >
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                            <button 
+                                onclick="eliminarRegistro('${item.id}')" 
+                                class="p-1 hover:bg-red-50 rounded"
+                                title="Eliminar"
+                            >
+                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Exportación de calendario en formato estándar universal .ICS
+        function descargarCalendarioSow(nombre, fechaPartoStr) {
+            const fParto = new Date(fechaPartoStr + 'T00:00:00');
+            const fString = fParto.toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0, 8);
+            
+            const icsContent = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//PorciGest App//ES",
+                "BEGIN:VEVENT",
+                `UID:${Date.now()}@porcigest.app`,
+                `DTSTAMP:${fString}T080000Z`,
+                `DTSTART:${fString}`,
+                `SUMMARY:Fecha Probable de Parto - Cerda ${nombre}`,
+                "DESCRIPTION:Control de Finca: Alerta de parto a los 115 dias de gestacion. Tener kit de parto listo.",
+                "BEGIN:VALARM",
+                "TRIGGER:-P2D", // Alerta automática 2 días antes del parto
+                "ACTION:DISPLAY",
+                "DESCRIPTION:Recordatorio: Parto de cerda en 2 dias",
+                "END:VALARM",
+                "END:VEVENT",
+                "END:VCALENDAR"
+            ].join("\r\n");
+
+            const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Parto_${nombre.replace(/\s+/g, '_')}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            lanzarToast("Alerta de calendario descargada con éxito.");
+        }
+
+        // Manejadores globales de formularios y búsquedas
+        formRegistro.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const ident = inputNombreCerda.value.trim() || `Cerda #${historial.length + 1}`;
+            
+            // Validar si ya existe este nombre para evitar duplicaciones confusas
+            if (historial.some(item => item.nombre.toLowerCase() === ident.toLowerCase())) {
+                lanzarToast(`Ya existe un registro activo con el nombre "${ident}".`, 'error');
+                return;
+            }
+
+            const fechaStr = inputFechaMonta.value;
+            const fechaInicio = new Date(fechaStr + 'T00:00:00');
+            const fechaParto = sumarDias(fechaInicio, GESTATION_DAYS).toISOString().split('T')[0];
+
+            const nuevoRegistro = {
+                id: Date.now().toString(),
+                nombre: ident,
+                fechaMonta: fechaStr,
+                fechaParto: fechaParto
+            };
+
+            historial.unshift(nuevoRegistro);
+            guardarHistorialLocal();
+            
+            inputNombreCerda.value = '';
+            lanzarToast(`Registro de "${ident}" guardado en la base de datos.`);
+        });
+
+        // Eliminar registro del historial
+        function eliminarRegistro(id) {
+            const index = historial.findIndex(item => item.id === id);
+            if (index !== -1) {
+                const nombre = historial[index].nombre;
+                historial.splice(index, 1);
+                guardarHistorialLocal();
+                lanzarToast(`Registro de "${nombre}" eliminado.`, 'info');
+            }
+        }
+
+        // Vinculación de descarga de ICS en la tarjeta activa
+        document.getElementById('btn-descargar-ics').addEventListener('click', () => {
+            const ident = inputNombreCerda.value.trim() || "Temporal";
+            const fechaStr = inputFechaMonta.value;
+            const fechaInicio = new Date(fechaStr + 'T00:00:00');
+            const fechaPartoStr = sumarDias(fechaInicio, GESTATION_DAYS).toISOString().split('T')[0];
+            descargarCalendarioSow(ident, fechaPartoStr);
+        });
+
+        // Evento de recálculo dinámico en el selector de fecha
+        inputFechaMonta.addEventListener('input', calcularYMostrar);
+        
+        // Evento de búsqueda de historial reactivo
+        inputBuscador.addEventListener('input', renderizarHistorial);
+
+        // Lanzador estético de notificaciones Toast (Inyección CSS limpia)
+        function lanzarToast(mensaje, tipo = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const iconContainer = document.getElementById('toast-icon-container');
+
+            toastMsg.innerText = mensaje;
+
+            if (tipo === 'error') {
+                iconContainer.className = "p-1.5 rounded-lg bg-red-50 text-red-600";
+            } else if (tipo === 'info') {
+                iconContainer.className = "p-1.5 rounded-lg bg-blue-50 text-blue-600";
+            } else {
+                iconContainer.className = "p-1.5 rounded-lg bg-emerald-50 text-emerald-600";
+            }
+
+            // Transición elegante de entrada
+            toast.style.transform = 'translateY(0)';
+            toast.style.opacity = '1';
+
+            setTimeout(() => {
+                // Transición elegante de salida
+                toast.style.transform = 'translateY(-100px)';
+                toast.style.opacity = '0';
+            }, 3500);
+        }
+
+        // Formateadores estéticos de fechas para la región hispanohablante
+        function formatearFecha(date) {
+            return date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function formatearFechaCortaDate(date) {
+            return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        }
+
+        function formatearFechaCortaString(dateString) {
+            const d = new Date(dateString + 'T00:00:00');
+            return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+    </script>
+</body>
+</html>
